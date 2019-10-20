@@ -102,6 +102,17 @@ function createBandComment($band_key,$post_key,$message) {
     return null;
 }
 
+function checkPostExists($band_key,$post_key) {
+    global $config;
+    $url = "https://openapi.band.us/v2.1/band/post?access_token=".$config->band_access_token.
+           "&band_key=".$band_key."&post_key=".$post_key;
+    $json = file_get_contents($url);
+    $obj = json_decode($json);
+    if(!empty($obj->result_data) && !empty($obj->result_data->post))
+        return true;
+    return false;
+}
+
 function listBands() {
     global $config;
     echo("Available Bands:".PHP_EOL);
@@ -130,7 +141,7 @@ function runClan($clan) {
             } else {
                 $postfile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".post_key";
                 $post_key = @file_get_contents($postfile);
-                if(empty($post_key)) {
+                if(empty($post_key) || checkPostExists($clan->band_key,$post_key) == false) {
                     $clan_obj = json_decode($new);
                     $post_key = createBandPost($clan->band_key,"Donation Tracker for ".$clan_obj->name);
                     file_put_contents($postfile,$post_key);
