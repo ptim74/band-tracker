@@ -1,66 +1,78 @@
 # band-tracker
-Clash of Clans donation tracker for Band
+Clash of Clans donation tracker for BAND
 
 ## Requirements
 
 - PHP with openssl extension enabled
 - Clash of Clans API key from https://developer.clashofclans.com
-- Band Access Token from https://developers.band.us/
+- BAND Access Token from https://developers.band.us/
 
-Note: Both CoC API and Band API requires static IP address.
+**Note:** Both CoC API and BAND API requires static IP address.
 
 ## Install PHP
 
 ### Install PHP on Windows
 
-Download PHP from https://windows.php.net/download/.
-If unsure which file to download choose latest Non Thread Safe zip file.
-Unzip file to c:\php.
-Copy c:\php\php.ini-development to c:\windows\php.ini
-Uncomment " 
+- Download PHP from https://windows.php.net/download/.
+- If unsure which file to download choose latest Non Thread Safe zip file.
+- Unzip file to c:\php.
+- Copy c:\php\php.ini-development to c:\windows\php.ini.
+- Uncomment following line **;extension=openssl** by removing the **;**-character.
+- Save modified c:\windows\php.ini.
 
 ### Install PHP on Linux
 
-You can install PHP with package management tools.
+- You can install PHP with package management tools.
 
 ## Install Tracker
 
+```
 git clone https://github.com/ptim74/band-tracker
+```
 
 ## Configure Tracker
 
-Copy config.sample.php to config.php
+Copy config.sample.php to config.php.
 
 ### Getting Band API key
 
-Go to https://developers.band.us/develop/myapps/list
-Click Register
+- Go to https://developers.band.us/develop/myapps/list
+- Click Register
+
 Service Name can be anything and Category should be Games.
 Band API requires Redirect URL and if you have an URL for your computer you can use that.
+
 If you don't have URL for your computer you can use IP-address (Google: what is my ip),
 and then you can put the IP-address as your Redirect URL, for example: http://192.168.43.54
-Agree the terms and click OK.
+
+- Agree the terms and click OK.
 
 Now your App should be listed in My Apps.
-Click name of the app you created.
+
+- Click name of the app you created.
+
 To get Access Token you need to click Connect BAND Account -button.
-You can either allow the app to use all of your Bands or you can select which Bands the app can access. Click Agree after you have decided which Bands to allow.
+
+You can either allow the app to use all of your Bands or you can select which Bands the app can access. 
+
+- Click Agree after you have decided which Bands to allow.
 
 Now you can copy the Access Token value and put it as the value of band_access_token in your config.php file (replacing text PUT_YOUR_BAND_ACCESS_TOKEN_HERE).
 
 ### Getting Clash of Clans API key
 
-Go to https://developer.clashofclans.com
-Register or sign in depending on whether you already have an accound or not.
+- Go to https://developer.clashofclans.com
+- Register or sign in depending on whether you already have an accound or not.
 
-Click My Account.
-Click Create New Key.
+- Click My Account.
+- Click Create New Key.
 
 Key name and description can be whatever you want.
+
 Allowed IP Adresses should contain your public IP (Google: what is my ip).
 
-Click Create Key.
-Click the key you created from My Keys list.
+- Click Create Key.
+- Click the key you created from My Keys list.
 
 Now you can copy the Token value and put it as the value of clash_api_token in your config.php file (replacing text PUT_YOUR_CLASH_API_TOKEN_HERE).
 
@@ -83,8 +95,10 @@ After you have the band key list you can copy the value of the key to the band_k
 
 ### Running the Tracker in Command Line
 
+```
 cd band-tracker
 c:\php\php.exe tracker.php
+```
 
 ### Running the Tracker in VS Code (for Development)
 
