@@ -66,6 +66,31 @@ function createBandPost($band_key,$message) {
             'content' => http_build_query($data)));
     $context  = stream_context_create($options);
     $json = file_get_contents($url, false, $context);
+    $obj = json_decode($json);
+    if(!empty($obj->result_data) && !empty($obj->result_data->post_key))
+        return $obj->result_data->post_key;
+    return null;
+}
+
+function createBandComment($band_key,$post_key,$message) {
+    global $config;
+    $url = "https://openapi.band.us/v2/band/post/comment/create";
+    $data = array(
+        'access_token' => $config->band_access_token, 
+        'band_key' => $band_key,
+        'post_key' => $post_key,
+        'body' => $message);
+    $options = array(
+        'http' => array(
+            'header'  => "Content-type: application/x-www-form-urlencoded",
+            'method'  => 'POST',
+            'content' => http_build_query($data)));
+    $context  = stream_context_create($options);
+    $json = file_get_contents($url, false, $context);
+    $obj = json_decode($json);
+    if(!empty($obj->result_data) && !empty($obj->result_data->message))
+        return $obj->result_data->message;
+    return null;
 }
 
 function listBands() {
@@ -91,7 +116,18 @@ function runClan($clan) {
         $message = getChanges($old,$new);
         if(!empty($message)) {
             echo $message;
-            createBandPost($clan->band_key,$message);
+            if(empty($clan->use_comments)) {
+                createBandPost($clan->band_key,$message);
+            } else {
+                $postfile = $config->data_dir.'/'.$clan->tag.".post_key";
+                $post_key = @file_get_contents($postfile);
+                if(empty($post_key)) {
+                    $clan_obj = json_decode($new);
+                    $post_key = createBandPost($clan->band_key,"Donation Tracker for ".$clan_obj->name);
+                    file_put_contents($postfile,$post_key);
+                }
+                createBandComment($clan->band_key,$post_key,$message);
+            }
         }
     }
     if(!empty($new)) {

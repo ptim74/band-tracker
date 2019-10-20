@@ -82,6 +82,18 @@ If you want to run the tracker continuously every minute, then set run_continuou
 
 If you want to see the list of available band keys, then set the value of list_bands_on_startup to 1. If you don't want to see the list anymore, then set the value of list_bands_on_startup to 0.
 
+Sample config of global settings:
+
+```php
+$config = (object) [
+    'clash_api_token' => 'eyJ0eXAi ... KV1zBi7j',
+    'band_access_token' => 'ZQAAAX ... Fo6j2teB',
+    'data_dir' => 'data',
+    'run_continuously' => 1,
+    'list_bands_on_startup' => 1
+];
+```
+
 ### Configuring Clans
 
 Sample config contains settings for two clans, but you can track only one clan or as many clans as you want.
@@ -90,6 +102,19 @@ Put your clan's tag in the tag value of the clan settings (replacing text #PUT_C
 
 For the band_key you need first to run the tracker once with the list_bands_on_startup value set to 1 in config.php.
 After you have the band key list you can copy the value of the key to the band_key value of your clan.
+
+You can either have a separate post for every tracking message (use_comments = 0), 
+or you can have all tracking messages sent as comments under one single post (use_comments = 1).
+
+Sample config for clan:
+
+```php
+$config->clans[] = (object) [
+    'tag' => '#LGQJYLPY',
+    'band_key' => 'AAB0fUBqx94pzPffkOnvr3qP',
+    'use_comments' => 1
+];
+```
 
 ## Running Tracker
 
