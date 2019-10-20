@@ -68,6 +68,19 @@ function createBandPost($band_key,$message) {
     $json = file_get_contents($url, false, $context);
 }
 
+function listBands() {
+    global $config;
+    echo("Available Bands:".PHP_EOL);
+    $url = "https://openapi.band.us/v2.1/bands?access_token=".$config->band_access_token;
+    $json = file_get_contents($url);
+    $obj = json_decode($json);
+    for($i = 0; $i < count($obj->result_data->bands); $i++) {
+        $band = $obj->result_data->bands[$i];
+        echo($band->band_key."  ".$band->name.PHP_EOL);
+    }
+    echo(PHP_EOL);
+}
+
 function runClan($clan) {
     global $config;
     echo date(DATE_W3C)," ",$clan->tag,PHP_EOL;
@@ -96,8 +109,6 @@ function checkConfig() {
         die("Please setup \$config->band_access_token in config.php");
     if(!isset($config->data_dir))
         die("Please setup \$config->data_dir in config.php");
-    if(!isset($config->clans))
-        die("Please setup \$config->clans in config.php");
     if(!file_exists($config->data_dir))
         mkdir($config->data_dir);
     if(!file_exists($config->data_dir))
@@ -106,11 +117,24 @@ function checkConfig() {
 
 function runOnce() {
     global $config;
-    checkConfig();
+    if(!isset($config->clans))
+        die("Please setup \$config->clans in config.php");
     foreach($config->clans as $clan)
         runClan($clan);
 }
 
-runOnce();
+function run() {
+    global $config;
+    checkConfig();
+    if(!empty($config->list_bands_on_startup))
+        listBands();
+    runOnce();
+    while(!empty($config->run_continuously)) {
+        sleep(60);
+        runOnce();
+    }
+}
+
+run();
 
 ?>
