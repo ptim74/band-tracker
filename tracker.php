@@ -118,7 +118,7 @@ function listBands() {
 function runClan($clan) {
     global $config;
     echo date(DATE_W3C)," ",$clan->tag,PHP_EOL;
-    $datafile = $config->data_dir.'/'.$clan->tag.".json";
+    $datafile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".json";
     $old = @file_get_contents($datafile);
     $new = getClashData($clan->tag);
     if(!empty($old) && !empty($new)) {
@@ -128,7 +128,7 @@ function runClan($clan) {
             if(empty($clan->use_comments)) {
                 createBandPost($clan->band_key,$message);
             } else {
-                $postfile = $config->data_dir.'/'.$clan->tag.".post_key";
+                $postfile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".post_key";
                 $post_key = @file_get_contents($postfile);
                 if(empty($post_key)) {
                     $clan_obj = json_decode($new);
