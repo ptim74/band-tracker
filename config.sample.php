@@ -5,7 +5,8 @@ $config = (object) [
     'band_access_token' => 'PUT_YOUR_BAND_ACCESS_TOKEN_HERE',
     'data_dir' => 'data',
     'run_continuously' => 1,
-    'list_bands_on_startup' => 1
+    'list_bands_on_startup' => 1,
+    'comment_limit' => 500
 ];
 
 $config->clans[] = (object) [

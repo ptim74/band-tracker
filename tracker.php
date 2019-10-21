@@ -61,6 +61,23 @@ function getChanges($oldJson, $newJson) {
     return $ret;
 }
 
+function checkResultSuccess($obj, $comment) {
+    if($obj == null) {
+        echo($comment." failed, result is null");
+        return false;
+    }
+    if(!isset($obj->result_code)) {
+        echo($comment." failed, result_code is null");
+        return false;
+    }
+    if($obj->result_code != 1) {
+        echo($comment." failed, result_code is ".$obj->result_code);
+        print_r($obj);
+        return false;
+    }
+    return true;
+}
+
 function createBandPost($band_key,$message) {
     global $config;
     $url = 'https://openapi.band.us/v2.2/band/post/create';
@@ -76,9 +93,9 @@ function createBandPost($band_key,$message) {
     $context  = stream_context_create($options);
     $json = file_get_contents($url, false, $context);
     $obj = json_decode($json);
-    if(!empty($obj->result_data) && !empty($obj->result_data->post_key))
-        return $obj->result_data->post_key;
-    return null;
+    if(!checkResultSuccess($obj,"create post"))
+        return null;
+    return $obj->result_data->post_key;
 }
 
 function createBandComment($band_key,$post_key,$message) {
@@ -97,20 +114,45 @@ function createBandComment($band_key,$post_key,$message) {
     $context  = stream_context_create($options);
     $json = file_get_contents($url, false, $context);
     $obj = json_decode($json);
-    if(!empty($obj->result_data) && !empty($obj->result_data->message))
-        return $obj->result_data->message;
-    return null;
+    return checkResultSuccess($obj,"create comment");
 }
 
-function checkPostExists($band_key,$post_key) {
+function getBandPostCommentCount($band_key,$post_key) {
     global $config;
     $url = "https://openapi.band.us/v2.1/band/post?access_token=".$config->band_access_token.
            "&band_key=".$band_key."&post_key=".$post_key;
     $json = file_get_contents($url);
     $obj = json_decode($json);
-    if(!empty($obj->result_data) && !empty($obj->result_data->post))
-        return true;
-    return false;
+    if(!checkResultSuccess($obj,"get comment count"))
+        return -1;
+    return $obj->result_data->post->comment_count;
+}
+
+function deleteOldestBandPostComment($band_key,$post_key) {
+    global $config;
+    $url = "https://openapi.band.us/v2/band/post/comments?access_token=".$config->band_access_token.
+           "&band_key=".$band_key."&post_key=".$post_key;
+    $json = file_get_contents($url);
+    $obj = json_decode($json);
+    if(!checkResultSuccess($obj,"get comments"))
+        return -1;
+    $url = "https://openapi.band.us/v2/band/post/comment/remove";
+    foreach($obj->result_data->items as $comment) {
+        $data = array(
+            'access_token' => $config->band_access_token, 
+            'band_key' => $band_key,
+            'post_key' => $post_key,
+            'comment_key' => $comment->comment_key);
+        $options = array(
+            'http' => array(
+                'header'  => "Content-type: application/x-www-form-urlencoded",
+                'method'  => 'POST',
+                'content' => http_build_query($data)));
+        $context  = stream_context_create($options);
+        $json = file_get_contents($url, false, $context);
+        $obj = json_decode($json);
+        return checkResultSuccess($obj,"get comments"); //Delete only one comment
+    }
 }
 
 function listBands() {
@@ -119,10 +161,10 @@ function listBands() {
     $url = "https://openapi.band.us/v2.1/bands?access_token=".$config->band_access_token;
     $json = file_get_contents($url);
     $obj = json_decode($json);
-    for($i = 0; $i < count($obj->result_data->bands); $i++) {
-        $band = $obj->result_data->bands[$i];
+    if(!checkResultSuccess($obj,"list bands"))
+        return;
+    foreach($obj->result_data->bands as $band)
         echo($band->band_key."  ".$band->name.PHP_EOL);
-    }
     echo(PHP_EOL);
 }
 
@@ -130,6 +172,8 @@ function runClan($clan) {
     global $config;
     echo date(DATE_W3C)," ",$clan->tag,PHP_EOL;
     $datafile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".json";
+    $postfile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".post_key";
+    $countfile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".count";
     $old = @file_get_contents($datafile);
     $new = getClashData($clan->tag);
     if(!empty($old) && !empty($new)) {
@@ -139,15 +183,25 @@ function runClan($clan) {
             if(empty($clan->use_comments)) {
                 createBandPost($clan->band_key,$message);
             } else {
-                $postfile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".post_key";
                 $post_key = @file_get_contents($postfile);
-                if(empty($post_key) || checkPostExists($clan->band_key,$post_key) == false) {
+                $comment_count = -1; //Post doesn't exist
+                if(!empty($post_key))
+                    $comment_count = getBandPostCommentCount($clan->band_key,$post_key);
+                if($comment_count == -1) {
                     $clan_obj = json_decode($new);
                     $post_key = createBandPost($clan->band_key,"Donation Tracker for ".$clan_obj->name);
                     file_put_contents($postfile,$post_key);
                 }
-                createBandComment($clan->band_key,$post_key,$message);
+                if(createBandComment($clan->band_key,$post_key,$message))
+                    $comment_count++;
+                file_put_contents($countfile,$comment_count);
             }
+        } elseif(!empty($clan->use_comments) && $config->comment_limit > 0) {
+            $comment_count = @file_get_contents($countfile) + 0;
+            $post_key = @file_get_contents($postfile);
+            if(!empty($post_key) && $comment_count > $config->comment_limit)
+                if(deleteOldestBandPostComment($clan->band_key,$post_key))
+                    file_put_contents($countfile,--$comment_count);
         }
     }
     if(!empty($new)) {
@@ -165,6 +219,8 @@ function checkConfig() {
         die("Please setup \$config->band_access_token in config.php");
     if(!isset($config->data_dir))
         die("Please setup \$config->data_dir in config.php");
+    if(!isset($config->comment_limit))
+        die("Please setup \$config->comment_limit in config.php");
     if(!file_exists($config->data_dir))
         mkdir($config->data_dir);
     if(!file_exists($config->data_dir))
