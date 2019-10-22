@@ -187,6 +187,9 @@ function runClan($clan) {
     $datafile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".json";
     $postfile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".post_key";
     $countfile = $config->data_dir.'/'.$clan->band_key.$clan->tag.".count";
+    $comment_limit = $config->comment_limit;
+    if(!empty($clan->comment_limit))
+        $comment_limit = $clan->comment_limit;
     $old = @file_get_contents($datafile);
     $new = getClashData($clan->tag);
     if(!empty($old) && !empty($new)) {
@@ -209,10 +212,10 @@ function runClan($clan) {
                     $comment_count++;
                 file_put_contents($countfile,$comment_count);
             }
-        } elseif(!empty($clan->use_comments) && $config->comment_limit > 0) {
+        } elseif(!empty($clan->use_comments) && $comment_limit > 0) {
             $comment_count = @file_get_contents($countfile) + 0;
             $post_key = @file_get_contents($postfile);
-            if(!empty($post_key) && $comment_count > $config->comment_limit)
+            if(!empty($post_key) && $comment_count > $comment_limit)
                 if(deleteOldestBandPostComment($clan->band_key,$post_key))
                     file_put_contents($countfile,--$comment_count);
         }
