@@ -12,7 +12,8 @@ $config = (object) [
 $config->clans[] = (object) [
     'tag' => '#PUT_CLANTAG_OF_FIRST_CLAN_HERE',
     'band_key' => 'PUT_BAND_KEY_FOR_FIRST_CLAN_HERE',
-    'use_comments' => 1 //create one initial post and write track message as comments on that post
+    'use_comments' => 1, //create one initial post and write track message as comments on that post
+    'comment_limit' => 100 //override default comment limit
 ];
 
 $config->clans[] = (object) [
