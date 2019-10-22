@@ -63,19 +63,40 @@ function getChanges($oldJson, $newJson) {
 
 function checkResultSuccess($obj, $comment) {
     if($obj == null) {
-        echo($comment." failed, result is null");
+        echo($comment." failed, result is null".PHP_EOL);
         return false;
     }
     if(!isset($obj->result_code)) {
-        echo($comment." failed, result_code is null");
+        echo($comment." failed, result_code is null".PHP_EOL);
         return false;
     }
     if($obj->result_code != 1) {
-        echo($comment." failed, result_code is ".$obj->result_code);
+        echo($comment." failed, result_code is ".$obj->result_code.PHP_EOL);
         print_r($obj);
         return false;
     }
     return true;
+}
+
+function bandCall($url,$options=null) {
+    $context = null;
+    if($options != null)
+        $context = stream_context_create($options);
+    do {
+        $cooldown = 0;
+        $context = null;
+        if($options != null)
+            $context = stream_context_create($options);
+        $json = file_get_contents($url, false, $context);
+        $obj = json_decode($json);
+        if(isset($obj->result_code) && $obj->result_code == 1003) {
+            print_r($obj);
+            $cooldown = $obj->result_data->cool_time->expired_in;
+            echo("Cooldown detected, retrying after ".$cooldown." seconds".PHP_EOL);
+            sleep($cooldown);
+        }
+    } while($cooldown > 0);
+    return $obj;
 }
 
 function createBandPost($band_key,$message) {
@@ -90,9 +111,7 @@ function createBandPost($band_key,$message) {
             'header'  => "Content-type: application/x-www-form-urlencoded",
             'method'  => 'POST',
             'content' => http_build_query($data)));
-    $context  = stream_context_create($options);
-    $json = file_get_contents($url, false, $context);
-    $obj = json_decode($json);
+    $obj = bandCall($url,$options);
     if(!checkResultSuccess($obj,"create post"))
         return null;
     return $obj->result_data->post_key;
@@ -111,9 +130,7 @@ function createBandComment($band_key,$post_key,$message) {
             'header'  => "Content-type: application/x-www-form-urlencoded",
             'method'  => 'POST',
             'content' => http_build_query($data)));
-    $context  = stream_context_create($options);
-    $json = file_get_contents($url, false, $context);
-    $obj = json_decode($json);
+    $obj = bandCall($url,$options);
     return checkResultSuccess($obj,"create comment");
 }
 
@@ -121,8 +138,7 @@ function getBandPostCommentCount($band_key,$post_key) {
     global $config;
     $url = "https://openapi.band.us/v2.1/band/post?access_token=".$config->band_access_token.
            "&band_key=".$band_key."&post_key=".$post_key;
-    $json = file_get_contents($url);
-    $obj = json_decode($json);
+    $obj = bandCall($url);
     if(!checkResultSuccess($obj,"get comment count"))
         return -1;
     return $obj->result_data->post->comment_count;
@@ -148,9 +164,7 @@ function deleteOldestBandPostComment($band_key,$post_key) {
                 'header'  => "Content-type: application/x-www-form-urlencoded",
                 'method'  => 'POST',
                 'content' => http_build_query($data)));
-        $context  = stream_context_create($options);
-        $json = file_get_contents($url, false, $context);
-        $obj = json_decode($json);
+        $obj = bandCall($url,$options);
         return checkResultSuccess($obj,"get comments"); //Delete only one comment
     }
 }
@@ -159,8 +173,7 @@ function listBands() {
     global $config;
     echo("Available Bands:".PHP_EOL);
     $url = "https://openapi.band.us/v2.1/bands?access_token=".$config->band_access_token;
-    $json = file_get_contents($url);
-    $obj = json_decode($json);
+    $obj = bandCall($url);
     if(!checkResultSuccess($obj,"list bands"))
         return;
     foreach($obj->result_data->bands as $band)
