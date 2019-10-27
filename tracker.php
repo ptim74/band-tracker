@@ -3,22 +3,30 @@
 include_once('config.php');
 
 function getClashData($tag) {
-    global $config;
+    global $config,$http_response_header;
     $api_url = isset($config->clash_api_url) ? $config->clash_api_url : "https://api.clashofclans.com/v1";
     $url = $api_url."/clans/".urlencode($tag);
     $header = "";
-    if(isset($config->clash_api_compress)) {
+    if(!empty($config->clash_api_compress)) {
         $url = "compress.zlib://".$url;
         $header .= "Accept-Encoding: gzip\r\n";
     }
     if(isset($config->clash_api_token))
         $header .= "Authorization: Bearer " . $config->clash_api_token . "\r\n";
-    $http_array = array("method" => "GET");
+    $http_array = array("method" => "GET", "ignore_errors" => TRUE);
     if(isset($header))
         $http_array["header"] = $header;
     $context = stream_context_create(array(
         "http"=> $http_array));
-    return file_get_contents($url,false,$context);
+    $json = file_get_contents($url,false,$context);
+    $obj = json_decode($json);
+    if(empty($obj->memberList)) {
+        foreach($http_response_header as $hdr)
+            echo($hdr.PHP_EOL);
+        echo($json.PHP_EOL);
+        return null;
+    }
+    return $json;
 }
 
 function getMembersFromClanData($json) {
