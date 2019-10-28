@@ -141,7 +141,10 @@ Configure PHP Executable Path
 
 Now you can run the Tracker by clicking F5 in VS Code.
 
+### Scheduling Tracker in Windows
 
+- Configure config.php
+- Run schedule.cmd
 
 
 
