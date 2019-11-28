@@ -214,7 +214,8 @@ function runClan($clan) {
                 if($comment_count == -1) {
                     $clan_obj = json_decode($new);
                     $post_key = createBandPost($clan->band_key,"Donation Tracker for ".$clan_obj->name);
-                    file_put_contents($postfile,$post_key);
+                    if(!empty($post_key))
+                        file_put_contents($postfile,$post_key);
                 }
                 if(createBandComment($clan->band_key,$post_key,$message))
                     $comment_count++;
